@@ -11,7 +11,7 @@ response = requests.get(search_url)
 soup = BeautifulSoup(response.text, 'html.parser')
 
 # Step 2: Extract job ads URLs from the search results
-div_tags = soup.find_all("div", class_="_1wkzzau0 a1msqi7e")
+div_tags = soup.find_all("h3", class_="_1wkzzau0 a1msqi4y lnocuo0 lnocuol _1d0g9qk4 lnocuos lnocuo21")
 
 href_list = []
 for div_tag in div_tags:
