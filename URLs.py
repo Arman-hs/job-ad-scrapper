@@ -6,7 +6,7 @@ base_url = "https://www.seek.com.au"
 
 # Prompt the user to enter the job title
 search_query = input("Please enter the job title: ")
-
+user_input = input("Please enter the skill: ")
 # Generate the search URL using the base URL and the formatted query
 query_url = search_query.replace(" ", "-")
 search_url = f"{base_url}/{query_url}-jobs"
@@ -40,10 +40,28 @@ while page <= max_pages:
     job_urls.extend(extracted_urls)
     page += 1
 
-for url in job_urls:
-    print(url)
 
-print(len(job_urls))
+
+def find_matching_links(job_urls, user_input):
+    matched_links = []
+
+    for url in job_urls:
+        response = requests.get(url)
+        html_content = response.text
+
+        soup = BeautifulSoup(html_content, 'html.parser')
+
+        div_tags = soup.find_all('div', class_="_1wkzzau0 szurmz0 szurmz2")
+
+        for div_tag in div_tags:
+            if user_input.lower() in div_tag.text.lower():
+                matched_links.append(url)
+                break
+
+    return matched_links
+
+
+matched_links = find_matching_links(job_urls, user_input)
 
 
 
