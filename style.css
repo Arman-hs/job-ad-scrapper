@@ -1,0 +1,14 @@
+.block-container {
+    padding-top: 1rem;
+    padding-bottom: 0rem;
+    padding-left: 5rem;
+    padding-right: 5rem;
+}
+
+img {
+border-radius: 30%;
+height: 80%;
+width: 80%;
+opacity: 0.35;
+margin-bottom: 0rem;
+}

@@ -1,68 +1,56 @@
 import streamlit as st
+from streamlit_lottie import st_lottie
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
-import altair as alt
+from streamlit_tags import st_tags
+from PIL import Image
+import plotly.graph_objects as go
+import plotly.colors as pc
 
-def extract_job_urls(url, base_url):
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
 
-    # Check if there are job listings available
-    if soup.find("div", class_="_1wkzzau0 a1msqi7e") is None:
-        return []
+st.set_page_config(page_title="ad_scraper", page_icon=":tada", layout="wide")
 
-    href_list = []
-    div_tags = soup.find_all("h3", class_="_1wkzzau0 a1msqi4y lnocuo0 lnocuol _1d0g9qk4 lnocuos lnocuo21")
-    for div_tag in div_tags:
-        a_tag = div_tag.find("a")
-        href = a_tag["href"]
-        href_list.append(f"{base_url}{href}")
 
-    return href_list
 
-def find_matching_links(job_urls, user_input):
-    matched_links = []
+with open("style.css") as f:
+    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
-    for url in job_urls:
-        response = requests.get(url)
-        html_content = response.text
 
-        soup = BeautifulSoup(html_content, 'html.parser')
+def load_lottierurl(url):
+    r = requests.get(url)
+    if r.status_code != 200:
+        return None
+    return r.json()
 
-        div_tags = soup.find_all('div', class_="_1wkzzau0 szurmz0 szurmz2")
+lottie_analysts = load_lottierurl("https://assets4.lottiefiles.com/packages/lf20_cGGXAUWaSE.json")
 
+img_vanguard = Image.open("images\Vang_pic.png")
+
+
+
+def compute(search_url, base_url):
+    page = 1
+    flag = True
+    job_urls = []
+    while flag:
+        page_url = f"{search_url}?page={page}"
+        response = requests.get(page_url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        if soup.find("div", class_="_1wkzzau0 a1msqi7e") is None:
+            flag = False
+            break
+        div_tags = soup.find_all("h3", class_="_1wkzzau0 a1msqi4y lnocuo0 lnocuol _1d0g9qk4 lnocuos lnocuo21")
         for div_tag in div_tags:
-            if user_input.lower() in div_tag.text.lower():
-                matched_links.append(url)
-                break
+            a_tag = div_tag.find("a")
+            href = a_tag["href"]
+            job_urls.append(f"{base_url}{href}")
 
-    return matched_links
-
-def main():
-    # Add title and user inputs
-    st.set_page_config(
-    page_title="Ad Scraper",
-    page_icon="🧊",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-    st.title("Ad Scraper")
-    # Create two columns
-    col1, col2 = st.columns([2, 3])
-
-    with col1:
-    #    st.subheader("User Inputs")
-        base_url = st.selectbox("Select a base URL", ["https://www.seek.com.au", "https://www.example.com"])
-        location = st.selectbox("Select the location", ["All states", "New South Wales NSW", "Victoria VIC", "Queensland QLD", "Western Australia WA", "South Australia SA", "Tasmania TAS"])
-        search_query = st.text_input("Enter the job title")
-        user_input = st.text_input("Enter the target skill")
+        page += 1
+    return job_urls
 
 
-        # Add your animation here (e.g., GIF or a custom animation)
-
-    # Generate the search URL using the base URL and the formatted query
-    query_url = search_query.replace(" ", "-")
+def base(base_url, query_url, location):
     if location == "All states":
         location = ""
         search_url = f"{base_url}/{query_url}-jobs/"
@@ -70,81 +58,194 @@ def main():
         location = location.replace(" ", "-")
         search_url = f"{base_url}/{query_url}-jobs/in-{location}"
 
-    # Extract job URLs
-    job_urls = []
-    page = 1
-    max_pages = 30
+    return search_url
 
-    while page <= max_pages:
-        page_url = f"{search_url}?page={page}"
-        extracted_urls = extract_job_urls(page_url, base_url)
-        if len(extracted_urls) == 0:
-            break
-        job_urls.extend(extracted_urls)
-        page += 1
 
-    # Get user input and find matching links
-    matched_links = find_matching_links(job_urls, user_input)
+def find_matching_links(job_urls, user_inputs, skills_group):
+    matched_links = [[] for _ in range(len(user_inputs))]
+    set_of_skills = []
 
-    # Display the count of job URLs and matched links using a bar chart
+    for url in job_urls:
+        response = requests.get(url)
+        html_content = response.text
+        soup = BeautifulSoup(html_content, 'html.parser')
+
+        div_tag = soup.find('div', class_="_1wkzzau0 _1v38w810")
+
+        if div_tag:
+            text = div_tag.get_text().lower()
+
+            for i, user_input in enumerate(user_inputs):
+                if user_input.lower() in text:
+                    matched_links[i].append(url)
+
+            if all(skills.lower() in text for skills in skills_group):
+                set_of_skills.append(url)
+
+    return matched_links, set_of_skills
+
+
+
+
+def charts(job_urls, matched_links, set_of_skills, user_inputs, base_url, location, search_query, skills_group):
     job_urls_count = len(job_urls)
-    matched_links_count = len(matched_links)
+    set_of_skills_count = len(set_of_skills)
+    matched_links_count = [len(links) for links in matched_links]
+    first_slash_index = base_url.index('/')
+    base_url_without_hhtps = base_url[(first_slash_index+2):]
 
-    chart_data = pd.DataFrame({
-        'Type': ['All open Positions', 'Matched skill open position'],
-        'Count': [job_urls_count, matched_links_count]
-    })
+    labels = ['All open Positions', 'skills group'] + [f'{i}' for i in user_inputs]
+    counts = [job_urls_count, set_of_skills_count] + matched_links_count
 
-    chart = alt.Chart(chart_data).mark_bar().encode(
-        x=alt.X('Type', axis=alt.Axis(labelAngle=0)),
-        y='Count',
-        color=alt.condition(
-            alt.datum.Type == 'Matched skill open position',
-            alt.value('#FFF333'),
-            alt.value('#3358FF')
-        )
-    ).properties(width=alt.Step(80))
+    num_user_inputs = len(user_inputs)
+    colors = pc.qualitative.Plotly[:num_user_inputs + 2]  # Generate colors from Plotly color palette
+
+    fig = go.Figure()
+
+    for label, count, color in zip(labels, counts, colors):
+        fig.add_trace(go.Bar(x=[label], y=[count], name=label, marker_color=color))
+    
+    fig.update_traces(texttemplate='%{y}', textposition='outside')
+    
+    fig.update_layout(
+        title=f"{base_url_without_hhtps} | {location} | {search_query}",
+        xaxis_title="",
+        yaxis_title="Count",
+        width=600,
+        height=450,
+        barmode="group",  # Display bars in a grouped manner
+        legend_title="Legend",
+        yaxis=dict(range=[0, max(counts) * 1.1])  # Adjust the range of y-axis to provide more space for the text
+    )
+
+    note_text = f"Note: skills group includes --> {' + '.join(skills_group)}"
+    fig.add_annotation(
+        text=note_text,
+        xref='paper',
+        yref='paper',
+        x=0,
+        y=-0.23,
+        showarrow=False,
+        align='left',
+        font=dict(color='rgb(239, 85, 59)', size=14, family='Arial, bold')
+    )
 
 
-    with col2:
-        st.subheader("Results")
-        st.altair_chart(chart, use_container_width=True)
 
+    st.plotly_chart(fig, use_container_width=True)
+
+
+
+
+
+
+
+
+def downloads(user_inputs, matched_links, set_of_skills, job_urls):
     job_urls_df = pd.DataFrame({"Job URLs": job_urls})
-    matched_links_df = pd.DataFrame({"Matched Links": matched_links})
-
-    #function to convert any dataframe to a csv file
-
-
-    csv2 = matched_links_df.to_csv().encode("utf-8")
-    csv1 = job_urls_df.to_csv().encode("utf-8")
-
-
-
-
-    st.download_button( 
-
-        label="Download all open positions",
-
-        data=csv1,
-
+    all_positions =st.download_button(
+        label="all open positions",
+        data=job_urls_df.to_csv(index=False).encode("utf-8"),
         file_name='all_open_position.csv',
-
         mime='text/csv',
-
-    )
-    st.download_button( 
-
-        label="Download all matched skill positions",
-
-        data=csv2,
-
-        file_name='matched_skill_position.csv',
-
-        mime='text/csv',
-
     )
 
-# Run the Streamlit app
+    set_of_skills_df = pd.DataFrame({"All Words Links": set_of_skills})
+    all_skills = st.download_button(
+        label="skills group",
+        data=set_of_skills_df.to_csv(index=False).encode("utf-8"),
+        file_name='all_words_matched_position.csv',
+        mime='text/csv',
+    )
+
+    for i, links in enumerate(matched_links):
+        matched_links_df = pd.DataFrame({f"Matched Links {i + 1}": links})
+        csv2 = matched_links_df.to_csv(index=False).encode("utf-8")
+        one_skill = st.download_button(
+            label=f"{user_inputs[i]}",
+            data=csv2,
+            file_name=f"{user_inputs[i]}.csv",
+            mime='text/csv',
+        )
+    return all_positions, all_skills, one_skill
+
+def run_computation(base_url, location, search_query, user_inputs,skills_group):
+    search_url = base(base_url, search_query.replace(" ", "-"), location)
+    job_urls = compute(search_url, base_url)
+    matched_links, set_of_skills = find_matching_links(job_urls, user_inputs, skills_group )
+    return job_urls, matched_links, set_of_skills, user_inputs
+
+
+
+
+def main():
+
+
+    
+    with st.container():
+        left_column,middle_column,right_column = st.columns((1.5,0.2,2))
+        with left_column:   
+            st.title("Job ads filtering by skills")
+            st.write("##### Hi,:wave: I am a job-ad-scraper written by [A-H](https://www.linkedin.com/in/arman-hajisafi/)" )
+            st.write("The usage of this dashboard is for research purposes :bar_chart:")
+#            st_lottie(lottie_analysts,height=200, key="analyst")
+        with right_column:
+            st.image(img_vanguard)
+
+
+    with st.container():
+        left_column, middle_column ,right_column = st.columns((1,0.15,2))
+        with left_column:   
+
+            base_url = st.selectbox("Select a base URL", ["https://www.seek.com.au", "https://www.example.com"])
+            location = st.selectbox("Select the location", ["All states", "New South Wales NSW", "Victoria VIC",
+                                                            "Queensland QLD", "Western Australia WA", "South Australia SA",
+                                                            "Tasmania TAS"])
+            search_query = st.text_input("Enter the job title")
+
+            st.markdown("##")
+            maxtags = st.slider('Number of skills allowed?', 1,10,7, key='jfnkerrnfvikwqejn')
+#            user_inputs = []
+            user_inputs = st_tags(
+                label='Enter skills:',
+                text='Press enter to add more',
+                suggestions=['Python', 'Tableau', 'SQL', 'PowerBI', 'Excel', 'Pandas', 'Numpy', 'Matplotlib', 'Jupyter', "IDE", "R", "SAS"],
+                maxtags=maxtags,
+                key="aljnf")
+
+            st.markdown("#")
+
+            maxt_group = st.slider('Number of skills allowed in a group?', 1,4,3, key='neww')
+            skills_group = st_tags(
+                label='Enter a group of skills:',
+                text='Press enter to add more',
+                suggestions=['Python', 'Tableau', 'SQL', 'PowerBI', 'Excel', 'Pandas', 'Numpy', 'Matplotlib', 'Jupyter', "IDE", "R", "SAS", "No SQL", "Mongodb"],
+                maxtags=maxt_group,
+                key="newww")
+
+
+
+            run_button = st.button("Run the program")
+            if run_button:
+                job_urls, matched_links, set_of_skills, user_inputs = run_computation(base_url, location, search_query,
+                                                                                    user_inputs, skills_group)
+                st.session_state.job_urls = job_urls
+                st.session_state.matched_links = matched_links
+                st.session_state.set_of_skills = set_of_skills
+
+
+
+        with right_column:
+            if "job_urls" in st.session_state:
+                matched_links = st.session_state.matched_links
+                charts(st.session_state.job_urls, matched_links, st.session_state.set_of_skills, user_inputs, base_url, location, search_query, skills_group)
+
+            if "job_urls" in st.session_state:
+
+                downloads(user_inputs, matched_links, st.session_state.set_of_skills, st.session_state.job_urls)
+
+
+
+
 if __name__ == '__main__':
     main()
