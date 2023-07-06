@@ -9,6 +9,7 @@ import plotly.graph_objects as go
 import plotly.colors as pc
 import base64
 from datetime import datetime
+import re
 
 
 
@@ -88,6 +89,8 @@ def base(base_url, query_url, location):
     return search_url
 
 
+
+
 def find_matching_links(job_urls, user_inputs, skills_group):
     matched_links = [[] for _ in range(len(user_inputs))]
     set_of_skills = []
@@ -103,13 +106,15 @@ def find_matching_links(job_urls, user_inputs, skills_group):
             text = div_tag.get_text().lower()
 
             for i, user_input in enumerate(user_inputs):
-                if user_input.lower() in text:
+                pattern = r'\b[\W_]*{}\b[\W_]*'.format(re.escape(user_input.lower()))
+                if re.search(pattern, text):
                     matched_links[i].append(url)
 
-            if all(skills.lower() in text for skills in skills_group):
+            if all(re.search(r'\b[\W_]*{}\b[\W_]*'.format(re.escape(skills.lower())), text) for skills in skills_group):
                 set_of_skills.append(url)
 
     return matched_links, set_of_skills
+
 
 
 
@@ -150,8 +155,8 @@ def charts(job_urls, matched_links, set_of_skills, user_inputs, base_url, locati
         text=note_text,
         xref='paper',
         yref='paper',
-        x=-0.065,
-        y=1.12,
+        x=-0.062,
+        y=1.135,
         xanchor='left',
         yanchor='top',
         showarrow=False,
@@ -172,8 +177,8 @@ def charts(job_urls, matched_links, set_of_skills, user_inputs, base_url, locati
 
 def downloads(user_inputs, matched_links, set_of_skills, job_urls):
 
-    job_urls_df = pd.DataFrame({"Job URLs": job_urls})
-    set_of_skills_df = pd.DataFrame({"All Words Links": set_of_skills})
+    job_urls_df = pd.DataFrame({"all open positions": job_urls})
+    set_of_skills_df = pd.DataFrame({"skills group": set_of_skills})
 
     col1,col2, col3, col4= st.columns([1,1,1,1])
 
@@ -189,13 +194,13 @@ def downloads(user_inputs, matched_links, set_of_skills, job_urls):
         st.download_button(
             label="skills group",
             data=set_of_skills_df.to_csv(index=False).encode("utf-8"),
-            file_name='all_words_matched_position.csv',
+            file_name='skills_group.csv',
             mime='text/csv',
         )
 
     with col3:
         for i, links in enumerate(matched_links):
-            matched_links_df = pd.DataFrame({f"Matched Links {i + 1}": links})
+            matched_links_df = pd.DataFrame({f"Matched Links | {user_inputs[i]}": links})
             csv2 = matched_links_df.to_csv(index=False).encode("utf-8")
 
             st.download_button(
