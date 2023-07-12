@@ -10,6 +10,8 @@ import plotly.colors as pc
 import base64
 from datetime import datetime
 import re
+import  streamlit_toggle as tog
+
 
 
 
@@ -29,7 +31,7 @@ def load_lottierurl(url):
 
 lottie_analysts = load_lottierurl("https://assets4.lottiefiles.com/packages/lf20_cGGXAUWaSE.json")
 
-img_vanguard = Image.open("images/Vang_pic.png")
+img_vanguard = Image.open("images\Van_logo_photoshop1.png")
 
 
 current_date = datetime.now()
@@ -54,6 +56,29 @@ def add_bg_from_local(image_file):
     )
 
 add_bg_from_local('4NB44.gif')    
+
+
+def experiencelvl():
+    search_query_0 = []
+    col0, col1, col2, col3 = st.columns([1.5, 1, 1, 1,])
+    with col0:
+        all_levles = st.checkbox("all experience levels")
+    with col1:
+        entry = st.checkbox("Entry lvl")
+    with col2:
+        junior = st.checkbox("Junior lvl")
+    with col3:
+        senior = st.checkbox("Senior lvl")
+    if all_levles:
+        search_query_0.append("")
+    if entry:
+        search_query_0.append("entry level")
+    if junior:
+        search_query_0.append("junior levle")
+    if senior:
+        search_query_0.append("senior level")
+
+    return ' '.join(search_query_0)
 
 
 
@@ -110,8 +135,9 @@ def find_matching_links(job_urls, user_inputs, skills_group):
                 if re.search(pattern, text):
                     matched_links[i].append(url)
 
-            if all(re.search(r'\b[\W_]*{}\b[\W_]*'.format(re.escape(skills.lower())), text) for skills in skills_group):
-                set_of_skills.append(url)
+            if len(skills_group) != 0:
+                if all(re.search(r'\b[\W_]*{}\b[\W_]*'.format(re.escape(skills.lower())), text) for skills in skills_group):
+                    set_of_skills.append(url)
 
     return matched_links, set_of_skills
 
@@ -149,19 +175,19 @@ def charts(job_urls, matched_links, set_of_skills, user_inputs, base_url, locati
         legend_title="Legend",
         yaxis=dict(range=[0, max(counts) * 1.1])  # Adjust the range of y-axis to provide more space for the text
     )
-
-    note_text = f"Note: skills group includes --> {' + '.join(skills_group)}"
-    fig.add_annotation(
-        text=note_text,
-        xref='paper',
-        yref='paper',
-        x=-0.062,
-        y=1.135,
-        xanchor='left',
-        yanchor='top',
-        showarrow=False,
-        font=dict(color='rgb(239, 85, 59)', size=12, family='Arial')
-    )
+    if len(skills_group) != 0:
+        note_text = f"Note: skills group includes --> {' + '.join(skills_group)}"
+        fig.add_annotation(
+            text=note_text,
+            xref='paper',
+            yref='paper',
+            x=-0.062,
+            y=1.135,
+            xanchor='left',
+            yanchor='top',
+            showarrow=False,
+            font=dict(color='rgb(239, 85, 59)', size=12, family='Arial')
+        )   
 
 
 
@@ -234,10 +260,19 @@ def main():
             st.markdown("##")
 
             base_url = st.selectbox("Select a base URL", ["https://www.seek.com.au", "https://www.example.com"])
-            location = st.selectbox("Select the location", ["All states", "New South Wales NSW", "Victoria VIC",
-                                                            "Queensland QLD", "Western Australia WA", "South Australia SA",
+            location = st.selectbox("Select the location", ["All states", "New South Wales NSW","sydney", "Victoria VIC",
+                                                            "melbourne","Queensland QLD", "Western Australia WA", "South Australia SA",
                                                             "Tasmania TAS"])
-            search_query = st.text_input("Enter the job title")
+            search_query_00 = st.text_input("Enter the job title")
+            st.markdown("####")
+
+            st.markdown('<span style="font-size:20px;">💡</span><span style="font-size:15px;">To optimize accuracy, tick one checkbox per search</span>',
+                            unsafe_allow_html=True)
+            exp_lvl = experiencelvl()
+
+            search_query = exp_lvl + " " + search_query_00
+
+
 
             st.markdown("##")
             maxtags = st.slider('Number of skills allowed?', 1,10,7, key='jfnkerrnfvikwqejn')

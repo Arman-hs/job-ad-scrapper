@@ -12,6 +12,7 @@ from datetime import datetime
 
 
 
+
 st.set_page_config(page_title="ad_scraper", page_icon=":tada", layout="wide")
 
 
@@ -53,6 +54,27 @@ def add_bg_from_local(image_file):
     )
 
 add_bg_from_local('4NB44.gif')    
+
+
+
+def experiencelvl():
+    search_query_0 = []
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col1:
+        entry = st.checkbox("Entry lvl")
+    with col2:
+        junior = st.checkbox("Junior lvl")
+    with col3:
+        senior = st.checkbox("Senior lvl")
+    if entry:
+        search_query_0.append("entry")
+    if junior:
+        search_query_0.append("junior")
+    if senior:
+        search_query_0.append("senior")
+
+    return ' '.join(search_query_0)
+
 
 
 
@@ -232,7 +254,13 @@ def main():
             location = st.selectbox("Select the location", ["All states", "New South Wales NSW", "Victoria VIC",
                                                             "Queensland QLD", "Western Australia WA", "South Australia SA",
                                                             "Tasmania TAS"])
-            search_query = st.text_input("Enter the job title")
+            search_query_00 = st.text_input("Enter the job title")
+
+            exp_lvl = experiencelvl()
+
+            search_query = exp_lvl + " " + search_query_00
+            st.write(search_query)
+
 
             st.markdown("##")
             maxtags = st.slider('Number of skills allowed?', 1,10,7, key='jfnkerrnfvikwqejn')
