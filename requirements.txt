@@ -1,0 +1,9 @@
+beautifulsoup4==4.12.2
+pandas==2.0.3
+Pillow==9.5.0
+plotly==5.15.0
+Requests==2.31.0
+streamlit==1.24.0
+streamlit_lottie==0.0.5
+streamlit_tags==1.2.8
+streamlit_toggle_switch==1.0.2
