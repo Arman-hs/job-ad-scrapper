@@ -31,7 +31,7 @@ def load_lottierurl(url):
 
 lottie_analysts = load_lottierurl("https://assets4.lottiefiles.com/packages/lf20_cGGXAUWaSE.json")
 
-img_vanguard = Image.open("images\Van_logo_photoshop1.png")
+img_vanguard = Image.open("images/Van_logo_photoshop1.png")
 
 
 current_date = datetime.now()
