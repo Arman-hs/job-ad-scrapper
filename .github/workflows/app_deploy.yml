@@ -21,7 +21,7 @@ jobs:
         export_default_credentials: true
       
     - name: build docker image
-      run: docker build -t $IMAGE_NAME:latest .
+      run: docker build -t test:latest .
 
     - name: Configure Docker Client
       run: gcloud auth configure-docker --quiet
