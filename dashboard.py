@@ -254,7 +254,7 @@ def main():
         left_column,middle_column,right_column = st.columns((1.1,0.2,2))
         with left_column:   
             st.title("Job ads filtering by skills")
-            st.write("##### Hi,:wave: I am a job-ad-scraper written by [A-H](https://www.linkedin.com/in/arman-hajisafi/)" )
+            st.write("##### Hi,:wave:, :wave: I am a job-ad-scraper written by [A-H](https://www.linkedin.com/in/arman-hajisafi/)" )
             st.write("The usage of this dashboard is for research purposes :bar_chart:")
 #            st_lottie(lottie_analysts,height=200, key="analyst")
             st.markdown("##")
