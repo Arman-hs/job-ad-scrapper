@@ -12,7 +12,7 @@ jobs:
       PROJECT-ID: radiant-pilot-391309
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v2
 
     - name: install the gcloud cli
     - uses: google-github-actions/setup-gcloud@v0
